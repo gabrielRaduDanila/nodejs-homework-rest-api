@@ -1,15 +1,29 @@
+/* eslint-disable prefer-regex-literals */
 const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const Joi = require('joi');
 
 const contactsPath = path.join(__dirname, 'contacts.json');
+
+const schema = Joi.object({
+  name: Joi.string()
+    .min(3)
+    .pattern(/^[\p{L} ,.'-]+$/u),
+
+  phone: Joi.string().pattern(new RegExp('^[+\\d\\s-]+$')),
+
+  email: Joi.string().email({
+    minDomainSegments: 2,
+    tlds: { allow: ['com', 'net', 'ro'] },
+  }),
+});
 
 async function listContacts() {
   try {
     const data = await fs.readFile(contactsPath);
     const contacts = JSON.parse(data);
     return contacts;
-    // console.table(contacts);
   } catch (error) {
     console.log(error.message);
   }
@@ -46,6 +60,22 @@ const removeContact = async (contactId) => {
 const addContact = async (body) => {
   try {
     const { name, email, phone } = body;
+    let validationError = null;
+    try {
+      await schema.validateAsync({
+        name,
+        email,
+        phone,
+      });
+    } catch (error) {
+      validationError = error;
+    }
+    if (validationError) {
+      return {
+        statusCode: 400,
+        message: { message: 'a required field is not ok' },
+      };
+    }
     const data = await fs.readFile(contactsPath);
     const contacts = JSON.parse(data);
     const newContact = {
@@ -56,7 +86,7 @@ const addContact = async (body) => {
     };
     const newContacts = [...contacts, newContact];
     await fs.writeFile(contactsPath, JSON.stringify(newContacts));
-    return newContacts;
+    return { statusCode: 200, message: newContacts };
   } catch (error) {
     console.log(error.message);
   }
@@ -64,6 +94,23 @@ const addContact = async (body) => {
 
 const updateContact = async (contactId, body) => {
   try {
+    const { name, email, phone } = body;
+    let validationError = null;
+    try {
+      await schema.validateAsync({
+        name,
+        email,
+        phone,
+      });
+    } catch (error) {
+      validationError = error;
+    }
+    if (validationError) {
+      return {
+        statusCode: 400,
+        message: { message: 'a required field is not ok' },
+      };
+    }
     const data = await fs.readFile(contactsPath);
     const contacts = JSON.parse(data);
 

@@ -35,9 +35,11 @@ router.post('/', async (req, res, next) => {
     res.json({ message: 'missing required name field' });
     return;
   }
-  res.status(201);
   const data = await addContact(body);
-  res.json(data);
+  const { statusCode, message } = data;
+  console.log(statusCode);
+  res.status(statusCode);
+  res.json(message);
 });
 
 router.delete('/:contactId', async (req, res, next) => {
