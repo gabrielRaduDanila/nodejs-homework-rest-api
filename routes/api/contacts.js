@@ -8,6 +8,7 @@ const {
   removeContact,
   addContact,
   updateContact,
+  updateStatusContact,
 } = require('../../models/contacts');
 
 router.get('/', async (req, res, next) => {
@@ -37,7 +38,6 @@ router.post('/', async (req, res, next) => {
   }
   const data = await addContact(body);
   const { statusCode, message } = data;
-  console.log(statusCode);
   res.status(statusCode);
   res.json(message);
 });
@@ -62,6 +62,19 @@ router.put('/:contactId', async (req, res, next) => {
     res.json({ message: 'missing fields' });
   } else {
     const { statusCode, message } = await updateContact(contactId, body);
+    res.status(statusCode);
+    res.json(message);
+  }
+});
+
+router.patch('/:contactId/favorite', async (req, res, next) => {
+  const contactId = req.params.contactId;
+  const body = req.body;
+  if (!body) {
+    res.status(400);
+    res.json({ message: 'missing field favorite' });
+  } else {
+    const { statusCode, message } = await updateStatusContact(contactId, body);
     res.status(statusCode);
     res.json(message);
   }
