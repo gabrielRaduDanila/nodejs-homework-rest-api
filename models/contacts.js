@@ -1,4 +1,4 @@
-const Contact = require('./Schema');
+const Contact = require('./schemas/Schema');
 
 async function listContacts() {
   try {
