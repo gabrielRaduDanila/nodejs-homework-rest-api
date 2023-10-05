@@ -10,7 +10,7 @@ const {
   updateContact,
   updateStatusContact,
 } = require('../../models/contacts');
-const { signupUser } = require('../../models/users');
+const { signupUser, loginUser } = require('../../models/users');
 
 router.get('/', async (req, res, next) => {
   res.status(200);
@@ -84,6 +84,13 @@ router.patch('/:contactId/favorite', async (req, res, next) => {
 router.post('/users/signup', async (req, res) => {
   const body = req.body;
   const data = await signupUser(body);
+  const { statusCode, message } = data;
+  res.status(statusCode).json(message);
+});
+
+router.post('/users/login', async (req, res) => {
+  const body = req.body;
+  const data = await loginUser(body);
   const { statusCode, message } = data;
   res.status(statusCode).json(message);
 });
