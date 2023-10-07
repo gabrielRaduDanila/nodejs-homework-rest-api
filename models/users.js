@@ -1,7 +1,8 @@
 const { User, userSchema } = require('./schemas/Users');
 require('dotenv').config();
+require('./pass-config');
 const jwt = require('jsonwebtoken');
-// const passport = require('passport');
+const passport = require('passport');
 const SECRET = process.env.SECRET;
 
 const signupUser = async (body) => {
@@ -40,8 +41,8 @@ const loginUser = async (body) => {
     };
 
     const token = jwt.sign(payload, SECRET, { expiresIn: '1w' });
-    console.log(user);
     user.setToken(token);
+    await user.save();
     return {
       statusCode: 200,
       message: {
@@ -60,4 +61,35 @@ const loginUser = async (body) => {
   }
 };
 
-module.exports = { signupUser, loginUser };
+const auth = (req, res, next) => {
+  passport.authenticate('jwt', { session: false }, (err, user) => {
+    if (!user || err) {
+      return res.status(401).json({
+        status: 'error',
+        code: 401,
+        message: 'Unauthorized',
+        data: 'Unauthorized',
+      });
+    }
+    req.user = user;
+    console.log(user);
+    next();
+  })(req, res, next);
+};
+
+const logOutUser = (req, res, next) => {
+  const token = req.headers.authorization;
+  if (!token) {
+    return res.status(401).json({ message: 'Not authorized' });
+  }
+
+  try {
+    const decodedToken = jwt.verify(token.replace('Bearer ', ''), SECRET);
+    req.userId = decodedToken.id;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Not authorized' });
+  }
+};
+
+module.exports = { signupUser, loginUser, auth, logOutUser };
