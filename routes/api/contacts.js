@@ -16,6 +16,8 @@ const {
   loginUser,
   auth,
   logOutUser,
+  addUserContact,
+  getUserContacts,
 } = require('../../models/users');
 const { User } = require('../../models/schemas/Users');
 
@@ -143,6 +145,44 @@ router.get('/users/current', auth, (req, res) => {
     return res.status(200).json({ ResponsBody: responsBody });
   } catch (error) {
     return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.post('/users/contacts', auth, async (req, res) => {
+  try {
+    const user = req.user;
+    const toAddContact = req.body;
+    const newContact = await addUserContact(user, toAddContact);
+    return res
+      .status(newContact.statusCode)
+      .json({ message: newContact.message });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.get('/users/contacts', auth, async (req, res) => {
+  try {
+    const user = req.user;
+    const newContact = await getUserContacts(user);
+    return res
+      .status(newContact.statusCode)
+      .json({ message: newContact.message });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.patch('/users', auth, async (req, res, next) => {
+  try {
+    const user = req.user;
+    const newSubscription = req.body.subscription;
+    user.subscription = newSubscription;
+    await user.save();
+    return res.status(200).json({ updatedUser: user });
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: 'Bad request' });
   }
 });
 

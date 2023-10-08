@@ -1,4 +1,5 @@
 const { User, userSchema } = require('./schemas/Users');
+const Contact = require('./schemas/Schema');
 require('dotenv').config();
 require('./pass-config');
 const jwt = require('jsonwebtoken');
@@ -72,7 +73,6 @@ const auth = (req, res, next) => {
       });
     }
     req.user = user;
-    console.log(user);
     next();
   })(req, res, next);
 };
@@ -92,4 +92,38 @@ const logOutUser = (req, res, next) => {
   }
 };
 
-module.exports = { signupUser, loginUser, auth, logOutUser };
+const addUserContact = async (user, toAddContact) => {
+  try {
+    console.log(user, toAddContact);
+
+    const newContact = await Contact.create({
+      owner: user._id,
+      ...toAddContact,
+    });
+    return { statusCode: 200, message: newContact };
+  } catch (error) {
+    console.log(error.message);
+    return {
+      statusCode: 400,
+      message: { message: 'a required field is not ok' },
+    };
+  }
+};
+
+const getUserContacts = async (user) => {
+  try {
+    const userContacts = await Contact.find({ owner: user._id });
+    return { statusCode: 200, message: userContacts };
+  } catch (err) {
+    return { statusCode: 401, message: err.message || 'bad request' };
+  }
+};
+
+module.exports = {
+  signupUser,
+  loginUser,
+  auth,
+  logOutUser,
+  addUserContact,
+  getUserContacts,
+};

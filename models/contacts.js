@@ -3,13 +3,14 @@ const Contact = require('./schemas/Schema');
 const listPaginateContacts = async (page, limit) => {
   try {
     const contacts = await Contact.find();
+    const withoutOwnerContacts = contacts.filter((c) => !c.owner);
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
-    const paginatedContacts = contacts.slice(startIndex, endIndex);
+    const paginatedContacts = withoutOwnerContacts.slice(startIndex, endIndex);
     const data = {
       page,
       limit,
-      totalContacts: contacts.length,
+      totalContacts: withoutOwnerContacts.length,
       data: paginatedContacts,
     };
     return data;
