@@ -3,18 +3,42 @@ const express = require('express');
 const router = express.Router();
 
 const {
-  listContacts,
   getContactById,
   removeContact,
   addContact,
   updateContact,
   updateStatusContact,
+  listPaginateContacts,
+  listFavoriteContacts,
 } = require('../../models/contacts');
+const {
+  signupUser,
+  loginUser,
+  auth,
+  logOutUser,
+  addUserContact,
+  getUserContacts,
+} = require('../../models/users');
+const { User } = require('../../models/schemas/Users');
 
 router.get('/', async (req, res, next) => {
-  res.status(200);
-  const data = await listContacts();
-  res.json(data);
+  res.status(200).json({ message: 'server si working' });
+});
+
+router.get('/contacts', async (req, res) => {
+  try {
+    const favorite = req.query.favorite;
+    if (favorite) {
+      const data = await listFavoriteContacts(favorite);
+      return res.status(data.status).json(data.data);
+    }
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const data = await listPaginateContacts(page, limit);
+    return res.status(200).json(data);
+  } catch (err) {
+    return res.status(400).json({ message: 'Bad Request' });
+  }
 });
 
 router.get('/:contactId', async (req, res, next) => {
@@ -77,6 +101,88 @@ router.patch('/:contactId/favorite', async (req, res, next) => {
     const { statusCode, message } = await updateStatusContact(contactId, body);
     res.status(statusCode);
     res.json(message);
+  }
+});
+
+router.post('/users/signup', async (req, res) => {
+  const body = req.body;
+  const data = await signupUser(body);
+  const { statusCode, message } = data;
+  res.status(statusCode).json(message);
+});
+
+router.post('/users/login', async (req, res) => {
+  const body = req.body;
+  const data = await loginUser(body);
+  const { statusCode, message } = data;
+  res.status(statusCode).json(message);
+});
+
+router.get('/users/logout', logOutUser, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+    user.token = null;
+    await user.save();
+    return res.status(204).send();
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.get('/users/current', auth, (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+    const responsBody = {
+      email: user.email,
+      subscription: user.subscription,
+    };
+    return res.status(200).json({ ResponsBody: responsBody });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.post('/users/contacts', auth, async (req, res) => {
+  try {
+    const user = req.user;
+    const toAddContact = req.body;
+    const newContact = await addUserContact(user, toAddContact);
+    return res
+      .status(newContact.statusCode)
+      .json({ message: newContact.message });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.get('/users/contacts', auth, async (req, res) => {
+  try {
+    const user = req.user;
+    const newContact = await getUserContacts(user);
+    return res
+      .status(newContact.statusCode)
+      .json({ message: newContact.message });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+router.patch('/users', auth, async (req, res, next) => {
+  try {
+    const user = req.user;
+    const newSubscription = req.body.subscription;
+    user.subscription = newSubscription;
+    await user.save();
+    return res.status(200).json({ updatedUser: user });
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({ message: 'Bad request' });
   }
 });
 

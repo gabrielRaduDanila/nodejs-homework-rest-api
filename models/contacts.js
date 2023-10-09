@@ -1,14 +1,44 @@
-const Contact = require('./Schema');
+const Contact = require('./schemas/Schema');
 
-async function listContacts() {
+const listPaginateContacts = async (page, limit) => {
   try {
     const contacts = await Contact.find();
-    return contacts;
+    const withoutOwnerContacts = contacts.filter((c) => !c.owner);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedContacts = withoutOwnerContacts.slice(startIndex, endIndex);
+    const data = {
+      page,
+      limit,
+      totalContacts: withoutOwnerContacts.length,
+      data: paginatedContacts,
+    };
+    return data;
   } catch (error) {
     console.error('Error to read contacts:', error);
     throw error;
   }
-}
+};
+
+const listFavoriteContacts = async (favorite) => {
+  try {
+    const contacts = await Contact.find();
+    const boolValue = JSON.parse(favorite.toLowerCase());
+    if (typeof boolValue === 'boolean') {
+      const favoriteContacts = contacts.filter((c) => c.favorite === boolValue);
+      const data = {
+        totalContacts: favoriteContacts.length,
+        data: favoriteContacts,
+      };
+      return { status: 200, data };
+    } else {
+      return { status: 400, data: 'Bad Request' };
+    }
+  } catch (error) {
+    console.error('Error to read contacts:', error);
+    throw error;
+  }
+};
 
 const getContactById = async (contactId) => {
   try {
@@ -78,10 +108,11 @@ const updateStatusContact = async (contactId, body) => {
 };
 
 module.exports = {
-  listContacts,
   getContactById,
   removeContact,
   addContact,
   updateContact,
   updateStatusContact,
+  listPaginateContacts,
+  listFavoriteContacts,
 };
