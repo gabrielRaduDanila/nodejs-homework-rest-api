@@ -22,7 +22,7 @@ const {
 const { User } = require('../../models/schemas/Users');
 
 router.get('/', async (req, res, next) => {
-  res.status(200).json({ message: 'server si working' });
+  res.status(200).json({ message: 'server is working' });
 });
 
 router.get('/contacts', async (req, res) => {
